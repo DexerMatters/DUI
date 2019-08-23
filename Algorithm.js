@@ -52,11 +52,15 @@ CSS.debug = function(c,css){
 		if(sents[i].indexOf(':')!=-1)
 			var piece = sents[i].split(':')[1].trim();
 		else throw  "CSS:SyntaxError:Unknown statement \""+sents[i]+"\"";
-		if (piece.charAt(0)!='('&&piece.charAt(piece.length-1)!=')')
-			if (piece.indexOf(' ') != -1)
-				values.push(piece.replace(/\s/g, ','));
-			else values.push(piece);
-		else values.push(piece);
+		var time=0;
+		var ps=piece.split('');
+		for(var p=0;p<piece.length;p++){
+			if(ps[p]=='(') time++;
+			if(ps[p]==')') time--;
+			if(time==0&&ps[p]==' ')
+				ps[p]=',';
+		}
+		values.push(ps.join(''));
 		if(!/[a-zA-Z\-]/g.test(sents[i].split(':')[0].trim())) 
 			throw  "CSS:SyntaxError:Unknown statement \""+sents[i]+"\"";
 		methods.push(CSS.toCamelFormat("set-" + sents[i].split(':')[0].trim()));
@@ -71,7 +75,7 @@ CSS.debug = function(c,css){
 			}
 		}else
 			res.push(c + "." + methods[i] + "(" + values[i] + ")");
-	}
+	};
 	return {output:res.join(";\n")+";\n",value:values,method:methods}
 }
 CSS.complie = function(c, css) {
