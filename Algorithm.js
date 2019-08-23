@@ -101,6 +101,7 @@ DUI.debug=function(dui){
 			if(!(namespace.hasCoveredWith(dui,["(",")"])||namespace.hasCoveredWith(dui,["{","}"]))){
 				namespaces.push(namespace);
 				classes.push([]);
+				instances.push([]);
 			}
 		}
 		else if (duis[i] == '{') {
@@ -117,7 +118,7 @@ DUI.debug=function(dui){
 			}
 			if(piece.indexOf(" as ")!=-1){
 				classes[classes.length-1].push(piece.split(" as ")[1].trim());
-				instances.push(piece.split(" as ")[0].trim());
+				instances[instances.length-1].push(piece.split(" as ")[0].trim());
 			}else throw "DUI:SyntaxError:Unknown word \""+piece+"\"";
 		}
 	}
@@ -127,10 +128,10 @@ DUI.debug=function(dui){
 	}
 	for (var i = 0; i < classes.length; i++) {
 		for(var j = 0; j < classes[i].length; j++)
-			ins_str += "DUI.v." + instances[i] + "=new "+namespaces[i]+"." + classes[i][j] + "(DUI.ctx);\n";
+			ins_str += "DUI.v." + instances[i][j] + "=new "+namespaces[i]+"." + classes[i][j] + "(DUI.ctx);\n";
 	}
 	for (var i = 0; i < csses.length; i++) {
-		ins_str += CSS.output("DUI.v."+instances[i], csses[i]);
+		ins_str += CSS.output("DUI.v."+Array.prototype.concat.apply([], instances)[i], csses[i]);
 	}
 	return {output:ins_str,class:classes,instance:instances,css:csses,namespace:namespaces,rest:test.join('')};
 };
