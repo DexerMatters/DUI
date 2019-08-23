@@ -143,7 +143,7 @@ DUI.debug=function(dui){
 			t++
 		}
 	}
-	print(DUI.ctrs)
+	DUI.ctrs=[];
 	return {output:ins_str+set_str,class:classes,instance:instances,css:csses,namespace:namespaces,rest:test.join('')};
 };
 DUI.output = function(dui) {
