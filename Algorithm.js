@@ -89,7 +89,7 @@ CSS.debug = function(c,css){
 			ctrs=values[i]
 		else if(methods[i]=="setSize"){
 			res.push(c + ".setLayoutParams(new android.widget.LinearLayout.LayoutParams("+values[i]+"))")
-		}
+		}else
 			res.push(c + "." + methods[i] + "(" + values[i] + ")");
 	};
 	DUI.ctrs.push(ctrs);
@@ -111,6 +111,7 @@ DUI.debug=function(dui){
 	var ctrs=[];
 	var vals=[];
 	var sums=[];
+	var brkt=["(",")"],brkt_=["(",")"];
 	var ins_str = "";
 	var set_str="";
 	var pointer=false;
@@ -121,14 +122,15 @@ DUI.debug=function(dui){
 				namespace+=duis[p];
 				duis[p]="";
 			}
-			if(!(namespace.hasCoveredWith(dui,["(",")"])||namespace.hasCoveredWith(dui,["{","}"]))){
+			if(!(namespace.hasCoveredWith(dui,brkt)||namespace.hasCoveredWith(dui,brkt_))){
 				if(namespace.indexOf(" as ")==-1){
 					namespaces.push(namespace);
 					classes.push([]);
 					instances.push([]);
 				}else{
-					vals.push(namespace.split(" as ")[0].trim());
-					sums.push(namespace.split(" as ")[1].trim());
+					var namespace_=namespace.split(" as ");
+					vals.push(namespace_[0].trim());
+					sums.push(namespace_[1].trim());
 				}
 			}
 		}
@@ -144,9 +146,11 @@ DUI.debug=function(dui){
 				piece = duis[p] + piece;
 				duis[p]="";
 			}
+			var index=classes.length-1;
 			if(piece.indexOf(" as ")!=-1){
-				classes[classes.length-1].push(piece.split(" as ")[1].trim());
-				instances[instances.length-1].push(piece.split(" as ")[0].trim());
+				var piece_=piece.split(" as ");
+				classes[index].push(piece_[1].trim());
+				instances[index].push(piece_[0].trim());
 			}else throw "DUI:SyntaxError:Unknown word \""+piece+"\"";
 		}
 	}
@@ -180,14 +184,16 @@ DUI.outputFromFile = function(path) {
 	var file = new java.io.File(path);
 	if (!(file.exists() || file.getName.split('.')[1] == "dui")) throw "JAVA:FileNotFoundException";
 	try {
-		var reader = java.io.FileReader(path);
-		var char;
-		while ((char = reader.read()) != -1)
-			cont = cont + String.fromCharCode(char);
-		reader.close();
+		var str="";
+		var input = new java.io.BufferedReader(new java.io.FileReader(path));
+		while ((str=input.readLine()) != null)
+			cont = cont + str;
+		input.close();
 	} catch (e) {
 		print(e)
 	}
 	return DUI.debug(cont).output;
 }
+var d=new Date().getMilliseconds();
 print(DUI.outputFromFile("/storage/emulated/0/games/com.mojang/minecraftpe/Skills/test.dui"))
+print(new Date().getMilliseconds()-d)
