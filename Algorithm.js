@@ -22,7 +22,7 @@ function CSS() {};
 
 function DUI() {};
 DUI.v={};
-
+DUI.ctrs=[];
 CSS.toCSSFormat = function(str) {
 	var css = "";
 	for (var i = 0; i < str.length; i++)
@@ -45,6 +45,7 @@ CSS.debug = function(c,css){
 	var res = [];
 	var values = [];
 	var methods = [];
+	var ctrs="DUI.ctx";
 	var sents = css.split(';');
 	for (var i = 0; i < sents.length; i++)
 		if(sents[i]===undefined||sents[i]=="") sents.splice(i,1);
@@ -73,9 +74,12 @@ CSS.debug = function(c,css){
 					res.push(c + ".addView(" + sp[j] + ")");
 				}
 			}
-		}else
+		}else if(methods[i] == "setNew")
+			ctrs=values[i]
+		else
 			res.push(c + "." + methods[i] + "(" + values[i] + ")");
 	};
+	DUI.ctrs.push(ctrs);
 	return {output:res.join(";\n")+";\n",value:values,method:methods}
 }
 CSS.complie = function(c, css) {
@@ -90,7 +94,9 @@ DUI.debug=function(dui){
 	var instances = [];
 	var csses = [];
 	var namespaces=[];
+	var ctrs=[];
 	var ins_str = "";
+	var set_str="";
 	for (var i = 0; i < duis.length; i++) {
 		if(duis[i] == '['){
 			var namespace="";
@@ -123,17 +129,22 @@ DUI.debug=function(dui){
 		}
 	}
 	var test=duis.join('').split('');
+	var t=0
 	for(var i=0;i<test.length;i++){
 		if(!/[\[\]\{\}]/.test(test[i])) throw "DUI:SyntaxError:Unknown word \""+test[i]+"\"";
 	}
-	for (var i = 0; i < classes.length; i++) {
-		for(var j = 0; j < classes[i].length; j++)
-			ins_str += "DUI.v." + instances[i][j] + "=new "+namespaces[i]+"." + classes[i][j] + "(DUI.ctx);\n";
-	}
 	for (var i = 0; i < csses.length; i++) {
-		ins_str += CSS.output("DUI.v."+Array.prototype.concat.apply([], instances)[i], csses[i]);
+		set_str += CSS.output("DUI.v."+Array.prototype.concat.apply([], instances)[i], csses[i]);
 	}
-	return {output:ins_str,class:classes,instance:instances,css:csses,namespace:namespaces,rest:test.join('')};
+	
+	for (var i = 0; i < classes.length; i++) {
+		for(var j = 0; j < classes[i].length; j++){
+			ins_str += "DUI.v." + instances[i][j] + "=new "+namespaces[i]+"." + classes[i][j] + "("+DUI.ctrs[t]+");\n";
+			t++
+		}
+	}
+	print(DUI.ctrs)
+	return {output:ins_str+set_str,class:classes,instance:instances,css:csses,namespace:namespaces,rest:test.join('')};
 };
 DUI.output = function(dui) {
 	return DUI.debug(dui).output;
