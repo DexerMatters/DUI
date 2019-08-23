@@ -18,6 +18,17 @@ String.prototype.hasCoveredWith=function(source,b){
     "[^\\)]*\\)?".replace(/\(/g,b[0]).replace(/\)/g,b[1]),"g");
   return Boolean(this.match(k));
 };
+String.prototype.hasCoveredWith_=function(index,b){
+	var str=this.split('');
+	var bool=[false,false];
+	for(var i=index+1;i<str.length;i++)
+		if(str[i]==b[1])
+			bool[0]=true;
+	for(var i=index-1;i>=0;i--)
+		if(str[i]==b[0])
+			bool[1]=true;
+	return bool[0]&&bool[1];
+};
 function CSS() {};
 
 function DUI() {};
@@ -89,14 +100,18 @@ CSS.complie = function(c, css) {
 
 DUI.ctx = com.mojang.minecraftpe.MainActivity.currentMainActivity.get();
 DUI.debug=function(dui){
+	//compile algorithm
 	var duis = dui.replace(/\n/g, '').split('');
 	var classes = [];
 	var instances = [];
 	var csses = [];
 	var namespaces=[];
 	var ctrs=[];
+	var vals=[];
+	var sums=[];
 	var ins_str = "";
 	var set_str="";
+	var pointer=false;
 	for (var i = 0; i < duis.length; i++) {
 		if(duis[i] == '['){
 			var namespace="";
@@ -105,9 +120,14 @@ DUI.debug=function(dui){
 				duis[p]="";
 			}
 			if(!(namespace.hasCoveredWith(dui,["(",")"])||namespace.hasCoveredWith(dui,["{","}"]))){
-				namespaces.push(namespace);
-				classes.push([]);
-				instances.push([]);
+				if(namespace.indexOf(" as ")==-1){
+					namespaces.push(namespace);
+					classes.push([]);
+					instances.push([]);
+				}else{
+					vals.push(namespace.split(" as ")[0].trim());
+					sums.push(namespace.split(" as ")[1].trim());
+				}
 			}
 		}
 		else if (duis[i] == '{') {
@@ -144,7 +164,11 @@ DUI.debug=function(dui){
 		}
 	}
 	DUI.ctrs=[];
-	return {output:ins_str+set_str,class:classes,instance:instances,css:csses,namespace:namespaces,rest:test.join('')};
+	//second treatment
+	var total=ins_str+set_str;
+	for(var i=0;i<sums.length;i++)
+		total=total.replace(new RegExp("\\["+vals[i]+"\\]","g"),sums[i]);
+	return {output:total,class:classes,instance:instances,css:csses,namespace:namespaces,rest:test.join('')};
 };
 DUI.output = function(dui) {
 	return DUI.debug(dui).output;
