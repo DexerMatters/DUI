@@ -87,7 +87,9 @@ CSS.debug = function(c,css){
 			}
 		}else if(methods[i] == "setNew")
 			ctrs=values[i]
-		else
+		else if(methods[i]=="setSize"){
+			res.push(c + ".setLayoutParams(new android.widget.LinearLayout.LayoutParams("+values[i]+"))")
+		}
 			res.push(c + "." + methods[i] + "(" + values[i] + ")");
 	};
 	DUI.ctrs.push(ctrs);
