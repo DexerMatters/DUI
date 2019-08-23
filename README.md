@@ -78,6 +78,8 @@ view as View{
 在DUI中，添加了CSS元素`child`，参数是此布局中的子布局的变量名，相当于简化了`addView`这个方法
 ### 构造参数
 在DUI中，添加了CSS元素`new`，参数是此类构造方法的参数，若块中无此元素，那么参数会默认指定为Minecraft主Activity的上下文
+### 控件大小
+在DUI中，添加了CSS元素`size`，参数有两个，分别为控件宽，高，相当于简化了声明LayoutParams的过程
 ### 插值
 在DUI中，插值可用`[]`声明，具体格式为`[name as value]`，其中name是名称，value是值，插值可使用`[name]`在CSS中调用。插值的调用会在编译时强制替换为其值，可以实现动态更改代码的目的
 ### 忽略空格
