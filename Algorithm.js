@@ -87,7 +87,7 @@ CSS.debug = function(c,css){
 				}
 			}
 		}else if(methods[i]=="setChildArr"){
-			res.push("for(v in "+values[i]+")"+c+".addView(v)");
+			res.push("for(var i=0;i<"+values[i]+".length;i++)"+c+".addView("+values[i]+"[i])");
 		}else if(methods[i]=="setNew")
 			ctrs=values[i]
 		else if(methods[i]=="setSize"){
@@ -249,4 +249,12 @@ DUI.outputFromFile = function(path) {
 	}
 	return DUI.debug(cont).output;
 }
-
+/*下面为开发调试
+var d=new Date().getMilliseconds();
+var r=DUI.outputFromFile("/storage/emulated/0/games/com.mojang/minecraftpe/Skills/test.dui");
+print(r);
+eval(r);
+var ui=new myDUI();
+print(ui.text[0].getText());
+print(new Date().getMilliseconds()-d)
+*/
