@@ -85,7 +85,9 @@ CSS.debug = function(c,css){
 					res.push(c + ".addView(" + sp[j] + ")");
 				}
 			}
-		}else if(methods[i] == "setNew")
+		}else if(methods[i]=="setChildArr"){
+			res.push("for(v in "+values[i]+")"+c+".addView(v)");
+		}else if(methods[i]=="setNew")
 			ctrs=values[i]
 		else if(methods[i]=="setSize"){
 			res.push(c + ".setLayoutParams(new android.widget.LinearLayout.LayoutParams("+values[i]+"))")
@@ -93,7 +95,7 @@ CSS.debug = function(c,css){
 			res.push(c + "." + methods[i] + "(" + values[i] + ")");
 	};
 	DUI.ctrs.push(ctrs);
-	return {output:res.join(";\n")+";\n",value:values,method:methods}
+	return {output:res.join(";\n")+";\n",value:values,method:methods,contruc:ctrs}
 }
 CSS.complie = function(c, css) {
 	eval(CSS.toCSS(c, css))
@@ -105,15 +107,14 @@ DUI.debug=function(dui){
 	//compile algorithm
 	var duis = dui.replace(/\n/g, '').split('');
 	var classes = [];
-	var instances = [];
+	var instances = [],aclasses=[],ainstances=[],atimes=[],acsses=[],anames=[];
 	var csses = [];
 	var namespaces=[];
 	var ctrs=[];
 	var vals=[];
 	var sums=[];
 	var brkt=["(",")"],brkt_=["(",")"];
-	var ins_str = "";
-	var set_str="";
+	var ins_str = "",set_str="",arr_str="",for_str="";
 	var pointer=false;
 	for (var i = 0; i < duis.length; i++) {
 		if(duis[i] == '['){
@@ -127,6 +128,8 @@ DUI.debug=function(dui){
 					namespaces.push(namespace);
 					classes.push([]);
 					instances.push([]);
+					aclasses.push([]);
+					ainstances.push([]);
 				}else{
 					var namespace_=namespace.split(" as ");
 					vals.push(namespace_[0].trim());
@@ -137,41 +140,72 @@ DUI.debug=function(dui){
 		else if (duis[i] == '{') {
 			var css = "";
 			var piece = "";
+			var index=classes.length-1;
+			var for_css=false
+			var times;
+			var i_name;
+			for(var p = i - 1; p != -1 && duis[p] != '[' && duis[p] != ']' && duis[p] != '{' && duis[p] != '}'; p--) {
+				piece = duis[p] + piece;
+				duis[p]="";
+			}
+			if(piece.indexOf(" as ")!=-1){
+				if(piece.indexOf(" for ")!=-1){
+					for_css=true;
+					var piece_0=piece.split(" as ");
+					var piece_=piece_0[1].split(" for ");
+					var fval=piece_[1].split(' ');
+					times=parseInt(fval[1]);
+					i_name=fval[0];
+					var index=ainstances.length-1;
+					ainstances[index].push(piece_0[0]);
+					aclasses[index].push(piece_[0]);
+					atimes.push(times);
+					anames.push(i_name);
+				}else{
+					var piece_=piece.split(" as ");
+					classes[index].push(piece_[1].trim());
+					instances[index].push(piece_[0].trim());
+				}
+			}
+			else throw "DUI:SyntaxError:Unknown word \""+piece+"\"";
 			for (var p = i + 1; duis[p] != '{' && duis[p] != '}'; p++){
 				css += duis[p];
 				duis[p]="";
 			}
-			csses.push(css.trim());
-			for (var p = i - 1; p != -1 && duis[p] != '[' && duis[p] != ']' && duis[p] != '{' && duis[p] != '}'; p--) {
-				piece = duis[p] + piece;
-				duis[p]="";
-			}
-			var index=classes.length-1;
-			if(piece.indexOf(" as ")!=-1){
-				var piece_=piece.split(" as ");
-				classes[index].push(piece_[1].trim());
-				instances[index].push(piece_[0].trim());
-			}else throw "DUI:SyntaxError:Unknown word \""+piece+"\"";
+			if(for_css)
+				acsses.push(css.trim());
+			else csses.push(css.trim());
 		}
 	}
 	var test=duis.join('').split('');
-	var t=0
+	var t=0;
+	var at=0;
+	//sort algorithm
 	for(var i=0;i<test.length;i++){
 		if(!/[\[\]\{\}]/.test(test[i])) throw "DUI:SyntaxError:Unknown word \""+test[i]+"\"";
 	}
 	for (var i = 0; i < csses.length; i++) {
 		set_str += CSS.output("DUI.v."+Array.prototype.concat.apply([], instances)[i], csses[i]);
 	}
-	
 	for (var i = 0; i < classes.length; i++) {
 		for(var j = 0; j < classes[i].length; j++){
 			ins_str += "DUI.v." + instances[i][j] + "=new "+namespaces[i]+"." + classes[i][j] + "("+DUI.ctrs[t]+");\n";
 			t++
 		}
 	}
+	for(var i=0;i<aclasses.length;i++){
+		for(var j=0;j<aclasses[i].length;j++){
+			var n=anames[at];
+			var cssv=CSS.debug(ainstances[i][j]+"["+n+"]",acsses[at]);
+			var news=ainstances[i][j]+"["+n+"]=new "+namespaces[i]+"."+aclasses[i][j]+"("+cssv.contruc+");"
+			for_str+="for(var "+n+"=0;"+n+"<"+atimes[at]+";"+n+"++){\n"+news+"\n"+cssv.output+"};\n"
+			arr_str+="DUI.v."+ainstances[i][j]+"=new Array("+atimes[at]+");\n";
+			at++;
+		}
+	}
 	DUI.ctrs=[];
 	//second treatment
-	var total=ins_str+set_str;
+	var total=arr_str+ins_str+for_str+set_str;
 	for(var i=0;i<sums.length;i++)
 		total=total.replace(new RegExp("\\["+vals[i]+"\\]","g"),sums[i]);
 	return {output:total,class:classes,instance:instances,css:csses,namespace:namespaces,rest:test.join('')};
