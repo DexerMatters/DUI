@@ -8,6 +8,7 @@ date : unknown
 |      |   |           /\      |         |\_
 |     /    |          /  \     |         |  \_
 |----/     |-----    /    \    |-----    |    \_
+未经授权，不可转载，商业等宣传操作
 
 */
 String.prototype.trim = function() {
@@ -107,12 +108,19 @@ DUI.debug=function(dui){
 	//compile algorithm
 	var duis = dui.replace(/\n/g, '').split('');
 	var classes = [];
-	var instances = [],aclasses=[],ainstances=[],atimes=[],acsses=[],anames=[];
+	var instances = []
+	var aclasses=[]
+	,ainstances=[]
+	,atimes=[]
+	,acsses=[]
+	,anames=[];
 	var csses = [];
 	var namespaces=[];
 	var ctrs=[];
 	var vals=[];
 	var sums=[];
+	var func;
+	var params='';
 	var brkt=["(",")"],brkt_=["(",")"];
 	var ins_str = "",set_str="",arr_str="",for_str="";
 	var pointer=false;
@@ -130,10 +138,17 @@ DUI.debug=function(dui){
 					instances.push([]);
 					aclasses.push([]);
 					ainstances.push([]);
-				}else{
+				}
+				else{
 					var namespace_=namespace.split(" as ");
 					vals.push(namespace_[0].trim());
 					sums.push(namespace_[1].trim());
+				}
+				if(/^package\s+\w+/.test(namespace)&&i==0){
+					var namespace_=namespace.split(' ');
+					func=namespace_[1].trim();
+					if(namespace_.length>1)
+						params=namespace_.slice(2).join(',').replace(/\s/g,'');
 				}
 			}
 		}
@@ -178,19 +193,23 @@ DUI.debug=function(dui){
 		}
 	}
 	var test=duis.join('').split('');
+	var returns=[];
 	var t=0;
 	var at=0;
 	//sort algorithm
+	var func_str="function "+func+"("+params+"){\n";
+	var re_str="";
 	for(var i=0;i<test.length;i++){
 		if(!/[\[\]\{\}]/.test(test[i])) throw "DUI:SyntaxError:Unknown word \""+test[i]+"\"";
 	}
 	for (var i = 0; i < csses.length; i++) {
-		set_str += CSS.output("DUI.v."+Array.prototype.concat.apply([], instances)[i], csses[i]);
+		set_str += CSS.output(Array.prototype.concat.apply([], instances)[i], csses[i]);
 	}
 	for (var i = 0; i < classes.length; i++) {
 		for(var j = 0; j < classes[i].length; j++){
-			ins_str += "DUI.v." + instances[i][j] + "=new "+namespaces[i]+"." + classes[i][j] + "("+DUI.ctrs[t]+");\n";
-			t++
+			ins_str += "var " + instances[i][j] + "=new "+namespaces[i]+"." + classes[i][j] + "("+DUI.ctrs[t]+");\n";
+			returns.push(instances[i][j]+":"+instances[i][j])
+			t++;
 		}
 	}
 	for(var i=0;i<aclasses.length;i++){
@@ -199,13 +218,15 @@ DUI.debug=function(dui){
 			var cssv=CSS.debug(ainstances[i][j]+"["+n+"]",acsses[at]);
 			var news=ainstances[i][j]+"["+n+"]=new "+namespaces[i]+"."+aclasses[i][j]+"("+cssv.contruc+");"
 			for_str+="for(var "+n+"=0;"+n+"<"+atimes[at]+";"+n+"++){\n"+news+"\n"+cssv.output+"};\n"
-			arr_str+="DUI.v."+ainstances[i][j]+"=new Array("+atimes[at]+");\n";
+			arr_str+="var "+ainstances[i][j]+"=new Array("+atimes[at]+");\n";
+			returns.push(ainstances[i][j]+":"+ainstances[i][j]);
 			at++;
 		}
 	}
+	re_str="return {"+returns.join(',')+"}\n"
 	DUI.ctrs=[];
 	//second treatment
-	var total=arr_str+ins_str+for_str+set_str;
+	var total=func_str+arr_str+ins_str+for_str+set_str+re_str+"}";
 	for(var i=0;i<sums.length;i++)
 		total=total.replace(new RegExp("\\["+vals[i]+"\\]","g"),sums[i]);
 	return {output:total,class:classes,instance:instances,css:csses,namespace:namespaces,rest:test.join('')};
@@ -228,6 +249,4 @@ DUI.outputFromFile = function(path) {
 	}
 	return DUI.debug(cont).output;
 }
-var d=new Date().getMilliseconds();
-print(DUI.outputFromFile("/storage/emulated/0/games/com.mojang/minecraftpe/Skills/test.dui"))
-print(new Date().getMilliseconds()-d)
+
