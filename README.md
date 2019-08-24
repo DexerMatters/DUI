@@ -26,6 +26,7 @@ view.setOnClickListener(null)
 ```
 使用后:
 ```css
+[D as DUI.v]
 [android.widget]
 text as TextView{
   text:"text";
@@ -37,7 +38,7 @@ layout as LinearLayout{
   height:15;
   margins:15 15 15 15;
   background-drawable:null;
-  child:text view
+  child:[D]DUI.v.text [D]DUI.v.view
 }
 [android.view]
 view as View{
@@ -48,7 +49,9 @@ view as View{
 ```
 ## 语法
 ### 编译
-DUI一般放在一个后缀为.dui的文件中，可用`DUI.outputFromFile(path)`来编译，如果仅仅测试DUI，可用`DUI.output(path)`来编译  
+DUI一般放在一个后缀为.dui的文件中，可用`DUI.outputFromFile(path)`来编译，如果仅仅测试DUI，可用`DUI.output(path)`来编译
+### 全局变量&局部变量
+在DUI中，每个块的变量为全局变量，再次调用需要在变量名前加上`DUI.v.`；在DUI中，每个循环块生成的迭代器变量为局部变量，在本块内直接调用即可
 ### 块
 在DUI中，使用`{}`括起来的叫做块，块中为CSS表达式，并且块前需要使用`as`关键词来声明一个某类型的块，格式为`name as class`，其中，`name`为变量名，`class`为类名，以下例子就是一个标准的块  
 ```css
@@ -59,6 +62,8 @@ text_view as TextView{
   margins:15 15 15 15;
 }
 ```
+### 循环块
+在DUI中，块语句的声明语句中可用`for`来创建一个循环块，循环块的语法为`name as class for index time`，其中，`index`是局部变量名，做循环的迭代器，`time`是循环次数，循环块能够使块的变量名成为一个长度为循环次数的数组，里面储存每次循环的产生的实例，若将每个实例作为某布局的子布局，可使用CSS元素`child-arr`来添加
 ### 命名空间
 在DUI中，每个块都需要有一个命名空间，命名空间由`[]`括起来，里面是包名或者类名，表示该命名空间表达式以下的所有块都从包名或者类名来调用，无命名空间可直接写`[]`，以下就是一个例子（...表示省略CSS）
 ```css
@@ -75,7 +80,7 @@ view as View{
 }
 ```
 ### 子布局
-在DUI中，添加了CSS元素`child`，参数是此布局中的子布局的变量名，相当于简化了`addView`这个方法
+在DUI中，添加了CSS元素`child`，参数是此布局中的子布局的变量名，相当于简化了`addView`这个方法，并且也添加了CSS元素`child-arr`，参数是子布局实例的数组
 ### 构造参数
 在DUI中，添加了CSS元素`new`，参数是此类构造方法的参数，若块中无此元素，那么参数会默认指定为Minecraft主Activity的上下文
 ### 控件大小
