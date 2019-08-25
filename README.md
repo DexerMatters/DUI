@@ -8,6 +8,7 @@ DUI是一个轻量的文本标记语言，主要用来简化modpe中繁琐的ui�
 ### 与javascript比较
 使用前:
 ```javascript
+ctx.runOnUiThread(new java.lang.Runnable({run:function(){try{
 var text=new Array(2)
 var layout=new android.widget.LinearLayout(ctx);
 var win=new android.widget.PopupWindow(ctx);
@@ -24,14 +25,16 @@ win.setFocusable(true)
 win.setContentView(layout)
 win.setWidth(200)
 win.setHeight(100)
+}catch(e){print(e)}
+}}));
 ```
 使用后:
 ```css
-[D as DUI.v.]
+[package demo]
 [android.widget]
 layout as LinearLayout{
   gravity:17;
-  child-arr:[D]text;
+  child-arr:text;
 }
 text as TextView for index 2{
   text:("Hello World");
@@ -39,7 +42,7 @@ text as TextView for index 2{
 }
 win as PopupWindow{
   focusable:true;
-  content-view:[D]layout;
+  content-view:layout;
   width:200;
   height:100
 }
