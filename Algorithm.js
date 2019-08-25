@@ -21,14 +21,18 @@ String.prototype.hasCoveredWith=function(source,b){
 };
 String.prototype.hasCoveredWith_=function(index,b){
 	var str=this.split('');
-	var bool=[false,false];
+	var right=0,left=0;
 	for(var i=index+1;i<str.length;i++)
 		if(str[i]==b[1])
-			bool[0]=true;
+			right++;
+		else if(str[i]==b[0])
+			right--;
 	for(var i=index-1;i>=0;i--)
 		if(str[i]==b[0])
-			bool[1]=true;
-	return bool[0]&&bool[1];
+			left++;
+		else if(str[i]==b[1])
+			left--;
+	return right==left&&left>0&&right>0;
 };
 function CSS() {};
 
@@ -105,6 +109,21 @@ CSS.complie = function(c, css) {
 
 
 DUI.ctx = com.mojang.minecraftpe.MainActivity.currentMainActivity.get();
+DUI.readDUI=function(path){
+	var cont = "";
+	var file = new java.io.File(path);
+	if (!(file.exists() || file.getName.split('.')[1] == "dui")) throw "JAVA:FileNotFoundException";
+	try {
+		var str="";
+		var input = new java.io.BufferedReader(new java.io.FileReader(path));
+		while ((str=input.readLine()) != null)
+			cont = cont + str;
+		input.close();
+	} catch (e) {
+		print(e)
+	}
+	return cont;
+}
 DUI.debug=function(dui){
 	//compile algorithm
 	var duis = dui.replace(/\n/g, '').split('');
@@ -120,12 +139,19 @@ DUI.debug=function(dui){
 	var ctrs=[];
 	var vals=[];
 	var sums=[];
+	var jses=[],jses_=[];
 	var func;
 	var params='';
-	var brkt=["(",")"],brkt_=["(",")"];
+	var brkt=["(",")"],brkt_=["{","}"],brkt__=["[","]"];
 	var ins_str = "",set_str="",arr_str="",for_str="";
 	var pointer=false;
-	var thr_str="DUI.ctx.runOnUiThread(new java.lang.Runnable({run:function(){try{\n"
+	var thr_str="DUI.ctx.runOnUiThread(new java.lang.Runnable({run:function(){try{\n";
+	var posState=function(str,index){
+		for(var i=0;i<str.length;i++)
+			if(str.charAt(index+i)=='{')
+				return true;
+		return false;
+	}
 	for (var i = 0; i < duis.length; i++) {
 		if(duis[i] == '['){
 			var namespace="";
@@ -134,7 +160,12 @@ DUI.debug=function(dui){
 				duis[p]="";
 			}
 			if(!(namespace.hasCoveredWith(dui,brkt)||namespace.hasCoveredWith(dui,brkt_))){
-				if(namespace.indexOf(" as ")==-1){
+				if(/^javascript\:/.test(namespace)){
+					var code=namespace.split(':').slice(1).join(':');
+					if(posState(dui,i))
+						jses.push(code);
+					else jses_.push(code);
+				}else if(namespace.indexOf(" as ")==-1){
 					namespaces.push(namespace);
 					classes.push([]);
 					instances.push([]);
@@ -153,10 +184,12 @@ DUI.debug=function(dui){
 						var params_=namespace_.slice(2);
 						params_.unshift("func");
 						params=params_.join(',').replace(/\s/g,'');
+				
 				}
+				
 			}
 		}
-		else if (duis[i] == '{') {
+		else if (duis[i] == '{'&&!dui.hasCoveredWith_(i,brkt__)) {
 			var css = "";
 			var piece = "";
 			var index=classes.length-1;
@@ -228,30 +261,19 @@ DUI.debug=function(dui){
 	re_str="func({"+returns.join(',')+"})\n"
 	DUI.ctrs=[];
 	//second treatment
-	var total=func_str+thr_str+arr_str+ins_str+for_str+set_str+re_str+"}catch(e){print(e)}\n}}));\n}";
+	var total=func_str+thr_str+jses.join('\n')+"\n"+arr_str+ins_str+for_str+set_str+jses_.join('\n')+'\n'+re_str+"}catch(e){print(e)}\n}}));\n}";
 	for(var i=0;i<sums.length;i++)
 		total=total.replace(new RegExp("\\["+vals[i]+"\\]","g"),sums[i]);
 	return {output:total,class:classes,instance:instances,css:csses,namespace:namespaces,rest:test.join('')};
 };
+
 DUI.output = function(dui) {
 	return DUI.debug(dui).output;
 };
 DUI.outputFromFile = function(path) {
-	var cont = "";
-	var file = new java.io.File(path);
-	if (!(file.exists() || file.getName.split('.')[1] == "dui")) throw "JAVA:FileNotFoundException";
-	try {
-		var str="";
-		var input = new java.io.BufferedReader(new java.io.FileReader(path));
-		while ((str=input.readLine()) != null)
-			cont = cont + str;
-		input.close();
-	} catch (e) {
-		print(e)
-	}
-	return DUI.debug(cont).output;
+	return DUI.debug(DUI.readDUI(path)).output;
 }
-/*下面为开发调试
+
 var d=new Date().getMilliseconds();
 var r=DUI.outputFromFile("/storage/emulated/0/games/com.mojang/minecraftpe/Skills/test.dui");
 print(r);
@@ -260,4 +282,4 @@ myDUI(function(ct){
   print(ct.text[0].getText());
 })
 print(new Date().getMilliseconds()-d)
-*/.
+
