@@ -51,5 +51,5 @@ win as PopupWindow{
 ## [开发文档](https://github.com/DexerMatters/DUI/wiki)
 ## 关于
 - 作者: [DexerMatters](https://github.com/DexerMatters)
-- 当前版本: 0.0.1 alpha
+- 当前版本: 0.0.5 beta
 - 联系方式: dexermatters@gmail.com or 2353708378@qq.com  
