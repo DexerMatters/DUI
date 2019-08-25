@@ -50,9 +50,7 @@ CSS.toCamelFormat = function(c) {
 		c_[i] = c_[i].charAt(0).toUpperCase() + c_[i].substring(1);
 	return c_.join("");
 };
-CSS.output = function(c, css) {
-	return CSS.debug(c,css).output;
-};
+
 CSS.debug = function(c,css){
 	var res = [];
 	var values = [];
@@ -98,8 +96,11 @@ CSS.debug = function(c,css){
 	DUI.ctrs.push(ctrs);
 	return {output:res.join(";\n")+";\n",value:values,method:methods,contruc:ctrs}
 }
+CSS.output = function(c, css) {
+	return CSS.debug(c,css).output;
+};
 CSS.complie = function(c, css) {
-	eval(CSS.toCSS(c, css))
+	eval(CSS.output(c, css))
 };
 
 
@@ -124,6 +125,7 @@ DUI.debug=function(dui){
 	var brkt=["(",")"],brkt_=["(",")"];
 	var ins_str = "",set_str="",arr_str="",for_str="";
 	var pointer=false;
+	var thr_str="DUI.ctx.runOnUiThread(new java.lang.Runnable({run:function(){try{\n"
 	for (var i = 0; i < duis.length; i++) {
 		if(duis[i] == '['){
 			var namespace="";
@@ -148,7 +150,9 @@ DUI.debug=function(dui){
 					var namespace_=namespace.split(' ');
 					func=namespace_[1].trim();
 					if(namespace_.length>1)
-						params=namespace_.slice(2).join(',').replace(/\s/g,'');
+						var params_=namespace_.slice(2);
+						params_.unshift("func");
+						params=params_.join(',').replace(/\s/g,'');
 				}
 			}
 		}
@@ -189,7 +193,7 @@ DUI.debug=function(dui){
 			}
 			if(for_css)
 				acsses.push(css.trim());
-			else csses.push(css.trim());
+			else csses.push(css.trim())
 		}
 	}
 	var test=duis.join('').split('');
@@ -202,11 +206,9 @@ DUI.debug=function(dui){
 	for(var i=0;i<test.length;i++){
 		if(!/[\[\]\{\}]/.test(test[i])) throw "DUI:SyntaxError:Unknown word \""+test[i]+"\"";
 	}
-	for (var i = 0; i < csses.length; i++) {
-		set_str += CSS.output(Array.prototype.concat.apply([], instances)[i], csses[i]);
-	}
 	for (var i = 0; i < classes.length; i++) {
 		for(var j = 0; j < classes[i].length; j++){
+			set_str += CSS.output(instances[i][j], csses[t]);
 			ins_str += "var " + instances[i][j] + "=new "+namespaces[i]+"." + classes[i][j] + "("+DUI.ctrs[t]+");\n";
 			returns.push(instances[i][j]+":"+instances[i][j])
 			t++;
@@ -223,10 +225,10 @@ DUI.debug=function(dui){
 			at++;
 		}
 	}
-	re_str="return {"+returns.join(',')+"}\n"
+	re_str="func({"+returns.join(',')+"})\n"
 	DUI.ctrs=[];
 	//second treatment
-	var total=func_str+arr_str+ins_str+for_str+set_str+re_str+"}";
+	var total=func_str+thr_str+arr_str+ins_str+for_str+set_str+re_str+"}catch(e){print(e)}\n}}));\n}";
 	for(var i=0;i<sums.length;i++)
 		total=total.replace(new RegExp("\\["+vals[i]+"\\]","g"),sums[i]);
 	return {output:total,class:classes,instance:instances,css:csses,namespace:namespaces,rest:test.join('')};
@@ -254,7 +256,8 @@ var d=new Date().getMilliseconds();
 var r=DUI.outputFromFile("/storage/emulated/0/games/com.mojang/minecraftpe/Skills/test.dui");
 print(r);
 eval(r);
-var ui=new myDUI();
-print(ui.text[0].getText());
+myDUI(function(ct){
+  print(ct.text[0].getText());
+})
 print(new Date().getMilliseconds()-d)
-*/
+*/.
