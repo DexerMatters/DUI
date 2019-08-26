@@ -15,24 +15,25 @@ String.prototype.trim = function() {
 	return (this===undefined?"":this).replace(/(^\s*)|(\s*$)/g, "");
 };
 String.prototype.hasCoveredWith=function(source,b){
-  var k=new RegExp("\\([^\\)]*"+source+
-    "[^\\)]*\\)?".replace(/\(/g,b[0]).replace(/\)/g,b[1]),"g");
+  try{
+  var k=new RegExp("\\([^\\)]*"+source+"[^\\)]*\\)?".replace(/\(/g,b[0]).replace(/\)/g,b[1]),"g");
   return Boolean(this.match(k));
+  }catch(e){print(e)}
 };
 String.prototype.hasCoveredWith_=function(index,b){
-	var str=this.split('');
-	var right=0,left=0;
-	for(var i=index+1;i<str.length;i++)
-		if(str[i]==b[1])
-			right++;
-		else if(str[i]==b[0])
-			right--;
-	for(var i=index-1;i>=0;i--)
-		if(str[i]==b[0])
+	var left=0,right=0,bds=this.split('');
+	for(var i=index;i>=0;i--){
+		if(bds[i]==b[0])
 			left++;
-		else if(str[i]==b[1])
-			left--;
-	return right==left&&left>0&&right>0;
+		if(bds[i]==b[1])
+			right++;
+	}
+	if(left==right&&bds[index]==b[1])
+		return true;
+	if(left>right)
+		return true;
+	else
+		return false;
 };
 function CSS() {};
 
@@ -124,9 +125,26 @@ DUI.readDUI=function(path){
 	}
 	return cont;
 }
-DUI.debug=function(dui){
+DUI.readJS=function(path){
+	var cont = "";
+	var file = new java.io.File(path);
+	if (!(file.exists() || file.getName.split('.')[1] == "js")) throw "JAVA:FileNotFoundException";
+	try {
+		var str="";
+		var input = new java.io.BufferedReader(new java.io.FileReader(path));
+		while ((str=input.readLine()) != null)
+			cont = cont + str;
+		input.close();
+	} catch (e) {
+		print(e)
+	}
+	return cont;
+}
+DUI.debug=function(dui,path_){
 	//compile algorithm
+	var path=new java.io.File(path_).getParent();
 	var duis = dui.replace(/\n/g, '').split('');
+	var duistr=dui.replace(/\n/g,'');
 	var classes = [];
 	var instances = []
 	var aclasses=[]
@@ -146,6 +164,7 @@ DUI.debug=function(dui){
 	var ins_str = "",set_str="",arr_str="",for_str="";
 	var pointer=false;
 	var thr_str="DUI.ctx.runOnUiThread(new java.lang.Runnable({run:function(){try{\n";
+	var fore_str="";
 	var posState=function(str,index){
 		for(var i=0;i<str.length;i++)
 			if(str.charAt(index+i)=='{')
@@ -155,17 +174,34 @@ DUI.debug=function(dui){
 	for (var i = 0; i < duis.length; i++) {
 		if(duis[i] == '['){
 			var namespace="";
-			for(var p=i+1;duis[p]!=']';p++) {
+			var detect=1;
+			for(var p=i+1;p<duistr.length;p++) {
+				if(duis[p]==']')
+					detect--;
+				if(duis[p]=='[')
+					detect++;
+				if(detect==0) break;
 				namespace+=duis[p];
-				duis[p]="";
+				duis[p]='';
 			}
 			if(!(namespace.hasCoveredWith(dui,brkt)||namespace.hasCoveredWith(dui,brkt_))){
-				if(/^javascript\:/.test(namespace)){
+				if(/^javascript\:/.test(namespace)||/^js\:/.test(namespace)){
 					var code=namespace.split(':').slice(1).join(':');
 					if(posState(dui,i))
 						jses.push(code);
 					else jses_.push(code);
-				}else if(namespace.indexOf(" as ")==-1){
+				}
+				else if(/^javascript\ssrc\s+\w+/.test(namespace)||/^js\ssrc\s+\w+/.test(namespace)){
+					fore_str+=DUI.readJS(path+"/"+namespace.split(' ')[2]+"\n")
+				}
+				else if(/^import\s+\w+/.test(namespace)){
+					var dui_=DUI.outputFromFile(path+"/"+namespace.split(' ')[1]).split('\n');
+					dui_.splice(0,2);
+					dui_.splice(dui_.length-4,dui_.length-1);
+					fore_str+=dui_.join('\n')+"\n";
+					
+				}
+				else if(namespace.indexOf(" as ")==-1){
 					namespaces.push(namespace);
 					classes.push([]);
 					instances.push([]);
@@ -261,25 +297,23 @@ DUI.debug=function(dui){
 	re_str="func({"+returns.join(',')+"})\n"
 	DUI.ctrs=[];
 	//second treatment
-	var total=func_str+thr_str+jses.join('\n')+"\n"+arr_str+ins_str+for_str+set_str+jses_.join('\n')+'\n'+re_str+"}catch(e){print(e)}\n}}));\n}";
+	var total=func_str+thr_str+fore_str+jses.join('\n')+"\n"+arr_str+ins_str+for_str+set_str+jses_.join('\n')+'\n'+re_str+"}catch(e){print(e)}\n}}));\n}";
 	for(var i=0;i<sums.length;i++)
 		total=total.replace(new RegExp("\\["+vals[i]+"\\]","g"),sums[i]);
 	return {output:total,class:classes,instance:instances,css:csses,namespace:namespaces,rest:test.join('')};
 };
 
 DUI.output = function(dui) {
-	return DUI.debug(dui).output;
+	return DUI.debug(dui,"").output;
 };
 DUI.outputFromFile = function(path) {
-	return DUI.debug(DUI.readDUI(path)).output;
+	return DUI.debug(DUI.readDUI(path),path).output;
 }
 
 var d=new Date().getMilliseconds();
 var r=DUI.outputFromFile("/storage/emulated/0/games/com.mojang/minecraftpe/Skills/test.dui");
 print(r);
 eval(r);
-myDUI(function(ct){
-  print(ct.text[0].getText());
-})
+MyDUI(function(a){})
 print(new Date().getMilliseconds()-d)
 
